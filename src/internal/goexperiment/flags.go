@@ -127,4 +127,8 @@ type Flags struct {
 	// ExecTracer2 controls whether to use the new execution trace
 	// implementation.
 	ExecTracer2 bool
+
+	// ISeriesAix controls whether to compile for the 'aix' variant
+	// supported in IBMi/OS400
+	ISeriesAix bool
 }

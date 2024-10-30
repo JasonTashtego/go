@@ -9,6 +9,7 @@ package runtime
 import (
 	"internal/goarch"
 	"internal/goos"
+	"internal/goexperiment"
 	"unsafe"
 )
 
@@ -75,6 +76,9 @@ func (tp taggedPointer) pointer() unsafe.Pointer {
 		return unsafe.Pointer(uintptr(int64(tp) >> tagBits << 3))
 	}
 	if GOOS == "aix" {
+		if goexperiment.ISeriesAix {
+			return unsafe.Pointer(uintptr((tp >> aixTagBits << 3) | 0x7<<56))
+		}
 		return unsafe.Pointer(uintptr((tp >> aixTagBits << 3) | 0xa<<56))
 	}
 	if GOARCH == "riscv64" {
