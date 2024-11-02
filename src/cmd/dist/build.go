@@ -1654,9 +1654,6 @@ func goCmd(env []string, goBinary string, cmd string, args ...string) {
 	if gohostos == "plan9" && os.Getenv("sysname") == "vx32" {
 		goCmd = append(goCmd, "-p=1")
 	}
-	if gohostos == "aix" && os.Getenv("MACHTYPE") == "powerpc-ibm-os400" {
-		goCmd = append(goCmd, "-p=1")  //IBMi-OS400
-	}
 
 	runEnv(workdir, ShowOutput|CheckExit, env, append(goCmd, args...)...)
 }

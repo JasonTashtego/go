@@ -133,10 +133,6 @@ var (
 )
 
 func bginit() {
-	if gohostos == "aix" && os.Getenv("MACHTYPE") == "powerpc-ibm-os400" {
-		maxbg = 1
-	}
-
 	bghelpers.Add(maxbg)
 	for i := 0; i < maxbg; i++ {
 		go bghelper()
