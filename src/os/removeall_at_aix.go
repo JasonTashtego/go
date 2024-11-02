@@ -2,11 +2,12 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build unix && !aix
+//go:build aix
 
 package os
 
 import (
+	"internal/goexperiment"
 	"internal/syscall/unix"
 	"io"
 	"syscall"
@@ -56,6 +57,11 @@ func removeAll(path string) error {
 }
 
 func removeAllFrom(parent *File, base string) error {
+
+	if goexperiment.ISeriesAix {
+		return removeDir_iseries(parent, base)
+	}
+
 	parentFd := int(parent.Fd())
 	// Simple case: if Unlink (aka remove) works, we're done.
 	err := ignoringEINTR(func() error {
@@ -188,4 +194,38 @@ func openDirAt(dirfd int, name string) (*File, error) {
 
 	// We use kindNoPoll because we know that this is a directory.
 	return newFile(r, name, kindNoPoll), nil
+}
+
+// RemoveDir removes a directory and all its contents, including subdirectories.
+func removeDir(dir string) error {
+	// Get the contents of the directory
+	entries, err := ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	// Recursively remove each entry
+	for _, entry := range entries {
+		path := dir + string(PathSeparator) + entry.Name()
+		if entry.IsDir() {
+			// Recursively call RemoveDir for subdirectories
+			if err := removeDir(path); err != nil {
+				return err
+			}
+		} else {
+			// Remove the file
+			if err := Remove(path); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Finally remove the directory itself
+	return Remove(dir)
+}
+
+func removeDir_iseries(parent *File, base string) error {
+	// Get the full path of the base item
+	fullPath := parent.Name() + string(PathSeparator) + base
+	return removeDir(fullPath)
 }

@@ -4,5 +4,5 @@
 
 package goexperiment
 
-const ISeriesAix = false
-const ISeriesAixInt = 0
+const ISeriesAix = true
+const ISeriesAixInt =1 
