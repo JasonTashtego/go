@@ -24,6 +24,7 @@ import (
 	"time"
 	"unicode/utf16"
 	"unicode/utf8"
+	"internal/goexperiment"
 
 	"golang.org/x/crypto/cryptobyte"
 	cryptobyte_asn1 "golang.org/x/crypto/cryptobyte/asn1"
@@ -992,7 +993,7 @@ func ParseCertificate(der []byte) (*Certificate, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(der) != len(cert.Raw) {
+	if len(der) != len(cert.Raw)  && !goexperiment.ISeriesAix {
 		return nil, errors.New("x509: trailing data")
 	}
 	return cert, err

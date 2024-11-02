@@ -133,10 +133,6 @@ var (
 )
 
 func bginit() {
-	if gohostos == "aix" && os.Getenv("MACHTYPE") == "powerpc-ibm-os400" {
-		maxbg = 1
-	}
-
 	bghelpers.Add(maxbg)
 	for i := 0; i < maxbg; i++ {
 		go bghelper()
@@ -276,20 +272,6 @@ func xmkdir(p string) {
 	if err != nil {
 		fatalf("%v", err)
 	}
-	if gohostos == "aix" && os.Getenv("MACHTYPE") == "powerpc-ibm-os400" {
-		// IFS bug?
-		os.Mkdir(p, 0777)
-		os.Mkdir(p, 0777)
-		os.Mkdir(p, 0777)
-		os.Mkdir(p, 0777)
-		os.Mkdir(p, 0777)
-		os.Mkdir(p, 0777)
-		os.Mkdir(p, 0777)
-		os.Mkdir(p, 0777)
-		os.Mkdir(p, 0777)
-		os.Mkdir(p, 0777)
-		os.Mkdir(p, 0777)
-	}
 }
 
 // xmkdirall creates the directory p and its parents, as needed.
@@ -297,20 +279,6 @@ func xmkdirall(p string) {
 	err := os.MkdirAll(p, 0777)
 	if err != nil {
 		fatalf("%v", err)
-	}
-	if gohostos == "aix" && os.Getenv("MACHTYPE") == "powerpc-ibm-os400" {
-		// IFS bug?
-		os.MkdirAll(p, 0777)
-		os.MkdirAll(p, 0777)
-		os.MkdirAll(p, 0777)
-		os.MkdirAll(p, 0777)
-		os.MkdirAll(p, 0777)
-		os.MkdirAll(p, 0777)
-		os.MkdirAll(p, 0777)
-		os.MkdirAll(p, 0777)
-		os.MkdirAll(p, 0777)
-		os.MkdirAll(p, 0777)
-		os.MkdirAll(p, 0777)
 	}
 }
 

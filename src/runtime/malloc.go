@@ -308,7 +308,7 @@ const (
 	// and starts at 0, so no offset is necessary.
 
 	// aix/ppc64 on ISeries arena: 0x0700000000000000, so adjust it below
-	arenaBaseOffset = 0xffff800000000000*goarch.IsAmd64 + 0x0a00000000000000*goos.IsAix - 0x0300000000000000*goexperiment.ISeriesAixInt
+	arenaBaseOffset = 0xffff800000000000*goarch.IsAmd64 + 0x0a00000000000000*goos.IsAix - 0x0300000000000000*goexperiment.ISeriesAixInt*goos.IsAix
 	// A typed version of this constant that will make it into DWARF (for viewcore).
 	arenaBaseOffsetUintptr = uintptr(arenaBaseOffset)
 
