@@ -65,6 +65,7 @@ The cross-compiled tree can then be copied to the ISeries to be used as a Go boo
     [~/go-1.22.8/src]$ export CC=/QOpenSys/pkgs/bin/gcc-12
     [~/go-1.22.8/src]$ export CGO_ENABLED=1
     [~/go-1.22.8/src]$ export GOMAXPROCS=1
+    [~/go-1.22.8/src]$ export GOEXPERIMENT=iseriesaix 
     [~/go-1.22.8/src]$ export GOROOT_BOOTSTRAP=~/go-boot1.22.8
     [~/go-1.22.8/src]$ export GOTMPDIR=~/tmp
 
