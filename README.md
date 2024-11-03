@@ -1,4 +1,6 @@
-### Experimental IBMi Go support (1.22.8)
+## Experimental IBMi Go support (1.22.8)
+#### This repo is EXPERIMENTAL -- use at your own risk. No warranties expressed or implied. YMMV
+
 This repo contains a fork of Go 1.22.8 with modifications merged from [https://github.com/onlysumitg/ibmigo]. 
 Infinite thanks to everyone mentioned there who contributed to making it possible.
 As noted in this open issue: [https://github.com/golang/go/issues/45017] address space differences cause standard aix/ppc64 built executables to fail on IBMi. 
