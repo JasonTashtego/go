@@ -22,7 +22,7 @@ export GOOS=aix                 [windows: $env:GOOS="aix"]
 export GOARCH=ppc64             [windows: $env:GOARCH="ppc64"]
 ```
 
-Build again using bootstrap:
+Build again using bootstrap.bash (or all.bat):
 
 ```
 ~/go1.22.8/go/src $ ./bootstrap.bash
