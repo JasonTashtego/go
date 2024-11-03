@@ -67,6 +67,7 @@ The cross-compiled tree can then be copied to the ISeries to be used as a Go boo
     [~/go-1.22.8/src]$ export GOTMPDIR=~/tmp
 
   Build Go with the bootstrap kit:  (example output below)
+    [~/go-1.22.8/src]$  chmod +x all.bash
     [~/go-1.22.8/src]$  ./all.bash 
     Building Go cmd/dist using /home/JASOND/go-boot1.22.8. (go1.22.8 X:iseriesaix aix/ppc64)
     Building Go toolchain1 using /home/JASOND/go-boot1.22.8.
