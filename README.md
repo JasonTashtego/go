@@ -10,7 +10,7 @@ This build of Go adds the expermimental flag:
 GOEXPERIMENT=iseriesaix
 ```
 The flag turns on the alternative address spacing to allow the compiler to produce working executables for the IBMi AIX flavor -- as well as compensating for other IBMi PASE environment differences.
-This repo can be used to cross-compile pure Go code (no cgo) to IBMi from supported Go platforms. Checkout the branch and use the standard (all.sh or all.bat) to build a working Go toolkit. See [https://go.dev/doc/install/source] if you're not familiar with building Go.
+This repo can be used to cross-compile pure Go code (no cgo) to IBMi from supported Go platforms. Checkout the branch and use the standard (all.sh or all.bat) to build a working Go toolkit. See [https://go.dev/doc/install/source] if you're not familiar with building Go.  If all you need to do is cross-compile, then you're done. You can set GOEXPERIMENT=iseriesaix and build working pure-go executables and then move them to the iseries. For CGO support bootstrapping on the IBMi with a working GCC is necessary.
 
 ### Bootstrapping a native IBMi Go
 
