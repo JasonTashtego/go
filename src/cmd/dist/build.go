@@ -1092,6 +1092,10 @@ func matchtag(tag string) bool {
 		return true
 	case "unix":
 		return unixOS[goos]
+	case "goexperiment.iseriesaix":
+		// go_bootstrap is built by dist itself, not cmd/go, so honor the
+		// experiment here or its runtime uses the stock aix address layout.
+		return goos == "aix" && strings.Contains(goexperiment, "iseriesaix")
 	default:
 		return false
 	}
