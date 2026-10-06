@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/pem"
+	"internal/goexperiment"
 	"sync"
 )
 
@@ -223,6 +224,13 @@ func (s *CertPool) AppendCertsFromPEM(pemCerts []byte) (ok bool) {
 		if block == nil {
 			break
 		}
+
+		if goexperiment.ISeriesAix {
+			if block.Type == "TRUSTED CERTIFICATE" {
+				block.Type = "CERTIFICATE"
+			}
+		}
+
 		if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
 			continue
 		}
