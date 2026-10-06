@@ -1464,6 +1464,12 @@ func cmdbootstrap() {
 	// over the build process, we'll set this back to the original
 	// GOEXPERIMENT.
 	os.Setenv("GOEXPERIMENT", "none")
+	if gohostos == "aix" && strings.Contains(goexperiment, "iseriesaix") {
+		// The IBMi address space differs from stock aix, so the
+		// bootstrap toolchain must be built with iseriesaix too or its
+		// runtime fails at startup. The bootstrap kit's Go knows the flag.
+		os.Setenv("GOEXPERIMENT", "iseriesaix")
+	}
 
 	if isdir(pathf("%s/src/pkg", goroot)) {
 		fatalf("\n\n"+
