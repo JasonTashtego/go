@@ -7,6 +7,7 @@
 package os
 
 import (
+	"internal/goexperiment"
 	"internal/poll"
 	"internal/syscall/unix"
 	"io/fs"
@@ -187,6 +188,22 @@ func newFile(fd int, name string, kind newFileKind, nonBlocking bool) *File {
 			// for any readers. See issue #24164.
 			if (runtime.GOOS == "darwin" || runtime.GOOS == "ios") && typ == syscall.S_IFIFO {
 				pollable = false
+			}
+		case "aix":
+			if goexperiment.ISeriesAix {
+				// On IBMi PASE, switching a freshly opened file such as
+				// /dev/null to non-blocking mode and registering it with the
+				// netpoller while another child is in exec makes that exec
+				// fail with EBADF. Files like these gain nothing from the
+				// netpoller anyway.
+				var st syscall.Stat_t
+				err := ignoringEINTR(func() error {
+					return syscall.Fstat(fd, &st)
+				})
+				typ := st.Mode & syscall.S_IFMT
+				if err == nil && (typ == syscall.S_IFREG || typ == syscall.S_IFDIR || typ == syscall.S_IFCHR) {
+					pollable = false
+				}
 			}
 		}
 	}
