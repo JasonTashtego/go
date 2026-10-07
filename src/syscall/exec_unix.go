@@ -222,7 +222,7 @@ func forkExec(argv0 string, argv []string, attr *ProcAttr) (pid int, err error) 
 	// Read child error status from pipe.
 	closeNoGate(p[1])
 	for {
-		n, err = readlen(p[0], (*byte)(unsafe.Pointer(&err1)), int(unsafe.Sizeof(err1)))
+		n, err = forkExecReadStatus(p[0], pid, (*byte)(unsafe.Pointer(&err1)), int(unsafe.Sizeof(err1)))
 		if err != EINTR {
 			break
 		}

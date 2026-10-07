@@ -12,3 +12,7 @@ func forkExecGateEnter()       {}
 func forkExecGateLeave()       {}
 func forkExecWaitDone(pid int) {}
 func closeNoGate(fd int)       { Close(fd) }
+
+func forkExecReadStatus(fd, pid int, p *byte, n int) (int, error) {
+	return readlen(fd, p, n)
+}
