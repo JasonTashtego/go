@@ -5,6 +5,7 @@
 package noder
 
 import (
+	"internal/buildcfg"
 	"reflect"
 	"runtime"
 	"testing"
@@ -73,7 +74,7 @@ func TestPragcgo(t *testing.T) {
 		{`go:cgo_ldflag "a rg"`, []string{`cgo_ldflag`, `a rg`}},
 	}
 
-	if runtime.GOOS != "aix" {
+	if runtime.GOOS != "aix" || buildcfg.Experiment.ISeriesAix {
 		tests = append(tests, []testStruct{
 			{`go:cgo_import_dynamic local remote "library"`, []string{`cgo_import_dynamic`, `local`, `remote`, `library`}},
 			{`go:cgo_import_dynamic local' remote' "lib rary"`, []string{`cgo_import_dynamic`, `local'`, `remote'`, `lib rary`}},

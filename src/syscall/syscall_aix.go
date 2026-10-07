@@ -12,6 +12,7 @@
 package syscall
 
 import (
+	"internal/goexperiment"
 	"unsafe"
 )
 
@@ -446,6 +447,13 @@ func anyToSockaddr(rsa *RawSockaddrAny) (Sockaddr, error) {
 		sa.Port = int(p[0])<<8 + int(p[1])
 		sa.Addr = pp.Addr
 		return sa, nil
+
+	case AF_UNSPEC:
+		if goexperiment.ISeriesAix {
+			// IBMi PASE appears to report an unnamed unix socket peer
+			// (e.g. from accept) with no address family set.
+			return new(SockaddrUnix), nil
+		}
 	}
 	return nil, EAFNOSUPPORT
 }
