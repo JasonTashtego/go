@@ -36,6 +36,11 @@ type SysProcAttr struct {
 	Pgid       int // Child's process group ID if Setpgid.
 }
 
+// closeAllInChild makes the child close every descriptor above the ones it was
+// asked to inherit, and the status pipe, just before exec. It is set on IBMi
+// (see exec_aix_closeall.go) and false everywhere else.
+var closeAllInChild bool
+
 // Implemented in runtime package.
 func runtime_BeforeFork()
 func runtime_AfterFork()
@@ -304,6 +309,18 @@ func forkAndExecInChild(argv0 *byte, argv, envv []*byte, chroot, dir *byte, attr
 	// Restore original rlimit.
 	if rlim != nil {
 		setrlimit1(RLIMIT_NOFILE, unsafe.Pointer(rlim))
+	}
+
+	// Close everything above the requested descriptors and the status pipe, so
+	// that no close-on-exec descriptor is left for exec to close later. On IBMi
+	// PASE that deferred close races with a close of the same file in the
+	// parent, and the new program then fails to load.
+	// The status pipe is above every requested descriptor (see pass 1 above).
+	if closeAllInChild {
+		for i = len(fd); i < pipe; i++ {
+			closeFD(uintptr(i))
+		}
+		fcntl1(uintptr(pipe+1), 0xa, 0) // F_CLOSEM
 	}
 
 	// Time to exec.

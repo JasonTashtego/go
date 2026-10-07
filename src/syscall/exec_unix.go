@@ -204,35 +204,25 @@ func forkExec(argv0 string, argv []string, attr *ProcAttr) (pid int, err error) 
 		return 0, err
 	}
 
-	// On IBMi, no descriptor may be closed while the child is in exec;
-	// see exec_gate_aix.go. A no-op elsewhere.
-	forkExecGateEnter()
-
 	// Kick off child.
 	pid, err1 = forkAndExecInChild(argv0p, argvp, envvp, chroot, dir, attr, sys, p[1])
 	if err1 != 0 {
-		closeNoGate(p[0])
-		closeNoGate(p[1])
-		forkExecGateLeave()
+		Close(p[0])
+		Close(p[1])
 		releaseForkLock()
 		return 0, Errno(err1)
 	}
 	releaseForkLock()
 
 	// Read child error status from pipe.
-	closeNoGate(p[1])
+	Close(p[1])
 	for {
-		n, err = forkExecReadStatus(p[0], pid, (*byte)(unsafe.Pointer(&err1)), int(unsafe.Sizeof(err1)))
+		n, err = readlen(p[0], (*byte)(unsafe.Pointer(&err1)), int(unsafe.Sizeof(err1)))
 		if err != EINTR {
 			break
 		}
 	}
-	closeNoGate(p[0])
-	if err == nil && n == 0 {
-		// The status pipe closed, so exec has begun; wait for it to finish.
-		forkExecWaitDone(pid)
-	}
-	forkExecGateLeave()
+	Close(p[0])
 	if err != nil || n != 0 {
 		if n == int(unsafe.Sizeof(err1)) {
 			err = Errno(err1)
