@@ -36,6 +36,10 @@ type SysProcAttr struct {
 	Pgid       int // Child's process group ID if Setpgid.
 }
 
+// forkExecSpawn, if set, may serve a fork-and-exec request without forking
+// (see exec_aix_spawn.go). It reports handled=false to fall back to forking.
+var forkExecSpawn func(argv0 *byte, argv, envv []*byte, chroot, dir *byte, attr *ProcAttr, sys *SysProcAttr) (pid int, err Errno, handled bool)
+
 // Implemented in runtime package.
 func runtime_BeforeFork()
 func runtime_AfterFork()
@@ -85,6 +89,12 @@ func execveLibcWrapper(path *byte, argv **byte, envp **byte) error {
 //
 //go:norace
 func forkAndExecInChild(argv0 *byte, argv, envv []*byte, chroot, dir *byte, attr *ProcAttr, sys *SysProcAttr, pipe int) (pid int, err Errno) {
+	if forkExecSpawn != nil {
+		if pid, err, ok := forkExecSpawn(argv0, argv, envv, chroot, dir, attr, sys); ok {
+			return pid, err
+		}
+	}
+
 	// Declare all variables at top in case any
 	// declarations require heap allocation (e.g., err1).
 	var (
