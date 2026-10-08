@@ -95,6 +95,7 @@ import (
 	"context"
 	"errors"
 	"internal/godebug"
+	"internal/goexperiment"
 	"internal/syscall/execenv"
 	"io"
 	"os"
@@ -307,6 +308,11 @@ type Cmd struct {
 	// (not supplied by the caller). These should be closed as soon as they
 	// are inherited by the child process.
 	childIOFiles []io.Closer
+
+	// lateChildIOFiles is like childIOFiles, but its files are kept open
+	// until the child process has exited, and closed by Wait. It is only used
+	// on IBMi (see keepChildIOUntilWait).
+	lateChildIOFiles []io.Closer
 
 	// parentIOPipes holds closers for the parent's end of any pipes
 	// connected to the child's stdin, stdout, and/or stderr streams
@@ -534,7 +540,7 @@ func (c *Cmd) childStdin() (*os.File, error) {
 		if err != nil {
 			return nil, err
 		}
-		c.childIOFiles = append(c.childIOFiles, f)
+		c.addChildIO(f)
 		return f, nil
 	}
 
@@ -547,7 +553,7 @@ func (c *Cmd) childStdin() (*os.File, error) {
 		return nil, err
 	}
 
-	c.childIOFiles = append(c.childIOFiles, pr)
+	c.addChildIO(pr)
 	c.parentIOPipes = append(c.parentIOPipes, pw)
 	c.goroutine = append(c.goroutine, func() error {
 		_, err := io.Copy(pw, c.Stdin)
@@ -583,7 +589,7 @@ func (c *Cmd) writerDescriptor(w io.Writer) (*os.File, error) {
 		if err != nil {
 			return nil, err
 		}
-		c.childIOFiles = append(c.childIOFiles, f)
+		c.addChildIO(f)
 		return f, nil
 	}
 
@@ -596,7 +602,7 @@ func (c *Cmd) writerDescriptor(w io.Writer) (*os.File, error) {
 		return nil, err
 	}
 
-	c.childIOFiles = append(c.childIOFiles, pw)
+	c.addChildIO(pw)
 	c.parentIOPipes = append(c.parentIOPipes, pr)
 	c.goroutine = append(c.goroutine, func() error {
 		_, err := io.Copy(w, pr)
@@ -610,6 +616,29 @@ func closeDescriptors(closers []io.Closer) {
 	for _, fd := range closers {
 		fd.Close()
 	}
+}
+
+// keepChildIOUntilWait reports whether the files that a Cmd creates for the
+// child process's stdin, stdout and stderr must stay open in the parent until
+// the child has exited, instead of being closed as soon as the child has been
+// started. On IBMi PASE a child can fail to load ("Could not load program ...:
+// System error - error data is: -1 9", an EBADF) if the parent closes its copy
+// of one of these files while the child is still starting. PASE implements
+// fork and exec with the host spawn(), which hands descriptors to the new job
+// by number, so the likely cause is that the new job still needs the open file
+// that the parent has just closed.
+func keepChildIOUntilWait() bool {
+	return runtime.GOOS == "aix" && goexperiment.ISeriesAix
+}
+
+// addChildIO records a file that the Cmd created for the child process and
+// that only the child needs once it has started.
+func (c *Cmd) addChildIO(f io.Closer) {
+	if keepChildIOUntilWait() {
+		c.lateChildIOFiles = append(c.lateChildIOFiles, f)
+		return
+	}
+	c.childIOFiles = append(c.childIOFiles, f)
 }
 
 // Run starts the specified command and waits for it to complete.
@@ -652,6 +681,8 @@ func (c *Cmd) Start() error {
 		c.childIOFiles = nil
 
 		if !started {
+			closeDescriptors(c.lateChildIOFiles)
+			c.lateChildIOFiles = nil
 			closeDescriptors(c.parentIOPipes)
 			c.parentIOPipes = nil
 			c.goroutine = nil // aid GC, finalization of pipe fds
@@ -944,6 +975,12 @@ func (c *Cmd) Wait() error {
 			err = watch.err
 		}
 	}
+
+	// The child has exited; close the files that were kept open for it (see
+	// keepChildIOUntilWait) before waiting for the copying goroutines, which
+	// need to see EOF or EPIPE.
+	closeDescriptors(c.lateChildIOFiles)
+	c.lateChildIOFiles = nil
 
 	if goroutineErr := c.awaitGoroutines(timer); err == nil {
 		// Report an error from the copying goroutines only if the program otherwise
