@@ -778,8 +778,11 @@ func (h *mheap) sysAlloc(n uintptr, hintList **arenaHint, arenaList *[]arenaIdx)
 		} else {
 			v = sysReserve(unsafe.Pointer(p), n, "heap reservation")
 		}
-		if p == uintptr(v) {
+		if v != nil && p == uintptr(v) {
 			// Success. Update the hint.
+			// (v must not be nil: a hint at address 0 that is outside the
+			// addressable heap, as on aix, leaves v == nil == p and would
+			// otherwise be taken for a successful reservation of [0, n).)
 			if !hint.down {
 				p += n
 			}
