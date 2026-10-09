@@ -508,6 +508,11 @@ func TestRootChtimes(t *testing.T) {
 				atime: time.Now(),
 				mtime: time.Time{},
 			}} {
+				if goexperiment.ISeriesAix {
+					// The IBMi file system keeps whole seconds.
+					times.atime = times.atime.Truncate(1 * time.Second)
+					times.mtime = times.mtime.Truncate(1 * time.Second)
+				}
 				switch runtime.GOOS {
 				case "js", "plan9":
 					times.atime = times.atime.Truncate(1 * time.Second)
@@ -1288,6 +1293,9 @@ func (test rootConsistencyTest) run(t *testing.T, f func(t *testing.T, path stri
 	t.Run(test.name, func(t *testing.T) {
 		if test.check != nil {
 			test.check(t)
+		}
+		if goexperiment.ISeriesAix && test.name == "file slash dot" {
+			t.Skip("IBMi PASE accepts a path of the form file/.")
 		}
 
 		dir1 := makefs(t, test.fs)
@@ -2256,9 +2264,11 @@ func runRootMultiTestDescs(t *testing.T, source, target testFileDesc, f func(*te
 		}
 	}
 
-	if runtime.GOOS == "wasip1" || runtime.GOOS == "js" {
+	if runtime.GOOS == "wasip1" || runtime.GOOS == "js" || goexperiment.ISeriesAix {
 		// WASI runtimes don't have any consistent behavior for handling paths with
 		// a trailing /, so skip consistency tests for these paths.
+		// IBMi PASE does not reject a trailing / on a file or on a name that does
+		// not exist, where Root does.
 		if rootTest.source.anySlashSuffix() || rootTest.target.anySlashSuffix() {
 			return
 		}
@@ -2625,7 +2635,7 @@ func (desc testFileDesc) lfinalKind() testFileKind {
 }
 
 func (desc testFileDesc) isError() bool {
-	if runtime.GOOS == "js" {
+	if runtime.GOOS == "js" || goexperiment.ISeriesAix {
 		return false
 	}
 	var isError func(desc testFileDesc, hasSuffix bool) bool
@@ -3216,7 +3226,7 @@ func TestRootMultiRename(t *testing.T) {
 			test.wantError(t, gotErr, os.ErrPathEscapes)
 		case test.source.lfinalKind() == testFileAbsent:
 			test.wantError(t, gotErr, errAny)
-		case test.source.slashSuffix() && test.source.lfinalKind() != testFileDir && runtime.GOOS != "js":
+		case test.source.slashSuffix() && test.source.lfinalKind() != testFileDir && runtime.GOOS != "js" && !goexperiment.ISeriesAix:
 			test.wantError(t, gotErr, errAny)
 		case test.root != nil && test.target.lescapes():
 			test.wantError(t, gotErr, os.ErrPathEscapes)
