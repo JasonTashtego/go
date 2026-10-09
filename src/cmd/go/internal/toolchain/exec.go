@@ -10,6 +10,7 @@ import (
 	"cmd/go/internal/base"
 	"fmt"
 	"internal/godebug"
+	"internal/goexperiment"
 	"os"
 	"os/exec"
 	"runtime"
@@ -41,7 +42,10 @@ func execGoToolchain(gotoolchain, dir, exe string) {
 	// propagate signals and such, but there are no signals on Windows.
 	// We also use the exec case when GODEBUG=gotoolchainexec=0,
 	// to allow testing this code even when not on Windows.
-	if godebug.New("#gotoolchainexec").Value() == "0" || runtime.GOOS == "windows" {
+	// On IBMi PASE, execve fails with EPERM ("Not owner") in a process that
+	// has more than one thread, as every Go program does, so use a
+	// subprocess there too.
+	if godebug.New("#gotoolchainexec").Value() == "0" || runtime.GOOS == "windows" || (runtime.GOOS == "aix" && goexperiment.ISeriesAix) {
 		cmd := exec.Command(exe, os.Args[1:]...)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
