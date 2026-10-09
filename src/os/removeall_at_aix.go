@@ -14,6 +14,11 @@ import (
 )
 
 func removeAll(path string) error {
+	if goexperiment.ISeriesAix {
+		// IBMi PASE has no usable openat or unlinkat; see removeAllPath.
+		return removeAllPath(path)
+	}
+
 	if path == "" {
 		// fail silently to retain compatibility with previous behavior
 		// of RemoveAll. See issue 28830.
@@ -53,11 +58,6 @@ func removeAll(path string) error {
 		return err
 	}
 	defer parent.Close()
-
-	if goexperiment.ISeriesAix {
-		// IBMi lacks a usable unlinkat; remove by path instead.
-		return removeDir_iseries(parentDir, base)
-	}
 
 	if err := removeAllFrom(sysfdType(parent.Fd()), base); err != nil {
 		if pathErr, ok := err.(*PathError); ok {
@@ -184,38 +184,4 @@ func openDirAt(dirfd sysfdType, name string) (*File, error) {
 		return nil, err
 	}
 	return newDirFile(fd, name)
-}
-
-// RemoveDir removes a directory and all its contents, including subdirectories.
-func removeDir(dir string) error {
-	// Get the contents of the directory
-	entries, err := ReadDir(dir)
-	if err != nil {
-		return err
-	}
-
-	// Recursively remove each entry
-	for _, entry := range entries {
-		path := dir + string(PathSeparator) + entry.Name()
-		if entry.IsDir() {
-			// Recursively call RemoveDir for subdirectories
-			if err := removeDir(path); err != nil {
-				return err
-			}
-		} else {
-			// Remove the file
-			if err := Remove(path); err != nil {
-				return err
-			}
-		}
-	}
-
-	// Finally remove the directory itself
-	return Remove(dir)
-}
-
-func removeDir_iseries(parentDir, base string) error {
-	// Get the full path of the base item
-	fullPath := parentDir + string(PathSeparator) + base
-	return removeDir(fullPath)
 }
