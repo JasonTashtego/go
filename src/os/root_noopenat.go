@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build (js && wasm) || plan9
+//go:build (js && wasm) || plan9 || (aix && goexperiment.iseriesaix)
 
 package os
 
@@ -16,7 +16,8 @@ import (
 )
 
 // root implementation for platforms with no openat.
-// Currently plan9 and js.
+// Currently plan9, js, and IBM i PASE (GOEXPERIMENT=iseriesaix), where the *at
+// calls fail with EINVAL for any descriptor but AT_FDCWD.
 type root struct {
 	name   string
 	closed atomic.Bool

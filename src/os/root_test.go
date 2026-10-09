@@ -9,6 +9,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"internal/goexperiment"
 	"internal/testenv"
 	"io"
 	"io/fs"
@@ -876,8 +877,8 @@ func testRootMoveFrom(t *testing.T, rename bool) {
 					t.Fatalf("root.Readlink(%q) = %v, want success", test.ltarget, err)
 				}
 
-				// When GOOS=js, creating a hard link to a symlink fails.
-				if !rename && runtime.GOOS == "js" {
+				// When GOOS=js, or on IBMi PASE, creating a hard link to a symlink fails.
+				if !rename && (runtime.GOOS == "js" || goexperiment.ISeriesAix) {
 					wantError = true
 				}
 
@@ -1643,6 +1644,9 @@ func TestRootConsistencySymlink(t *testing.T) {
 }
 
 func TestRootRenameAfterOpen(t *testing.T) {
+	if goexperiment.ISeriesAix {
+		t.Skip("Root references a directory name, not a descriptor, on IBMi PASE")
+	}
 	switch runtime.GOOS {
 	case "windows":
 		t.Skip("renaming open files not supported on " + runtime.GOOS)
