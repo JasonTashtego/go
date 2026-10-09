@@ -5,6 +5,7 @@
 package net
 
 import (
+	"internal/goexperiment"
 	"internal/poll"
 	"internal/syscall/unix"
 	"syscall"
@@ -61,6 +62,7 @@ func interfaceTable(ifindex int) ([]Interface, error) {
 	}
 	defer poll.CloseFunc(sock)
 
+	full := tab
 	var ift []Interface
 	for len(tab) > 0 {
 		ifm := (*syscall.IfMsgHdr)(unsafe.Pointer(&tab[0]))
@@ -79,6 +81,20 @@ func interfaceTable(ifindex int) ([]Interface, error) {
 				ifr := &ifreq{}
 				copy(ifr.Name[:], ifi.Name)
 				err = unix.Ioctl(sock, syscall.SIOCGIFMTU, unsafe.Pointer(ifr))
+				if err != nil && goexperiment.ISeriesAix {
+					// On IBMi PASE the interface ioctls reject the line name that the
+					// routing table gives (ETHLINE1, *LOOPBACK) with EINVAL, and accept the
+					// interface's IP address as its name instead. An interface with no
+					// IPv4 address, or whose ioctl fails, has an unknown MTU.
+					err = nil
+					ifr = &ifreq{}
+					if name := ifaddrName(full, int(ifm.Index)); name != "" {
+						copy(ifr.Name[:], name)
+						if unix.Ioctl(sock, syscall.SIOCGIFMTU, unsafe.Pointer(ifr)) != nil {
+							ifr = &ifreq{}
+						}
+					}
+				}
 				if err != nil {
 					return nil, err
 				}
@@ -94,6 +110,40 @@ func interfaceTable(ifindex int) ([]Interface, error) {
 	}
 
 	return ift, nil
+}
+
+// ifaddrName returns the text form of the first IPv4 address that the routing
+// table tab lists for the interface with the given index, or "" if it has none.
+// On IBMi PASE that text is the name by which the interface ioctls know the
+// interface.
+func ifaddrName(tab []byte, index int) string {
+	for len(tab) > 0 {
+		ifm := (*syscall.IfMsgHdr)(unsafe.Pointer(&tab[0]))
+		if ifm.Msglen == 0 {
+			break
+		}
+		if ifm.Type == syscall.RTM_NEWADDR && int(ifm.Index) == index {
+			mask := ifm.Addrs
+			off := uint(syscall.SizeofIfMsghdr)
+			var iprsa *syscall.RawSockaddr
+			for i := uint(0); i < _RTAX_MAX; i++ {
+				if mask&(1<<i) == 0 {
+					continue
+				}
+				rsa := (*syscall.RawSockaddr)(unsafe.Pointer(&tab[off]))
+				if i == _RTAX_IFA {
+					iprsa = rsa
+				}
+				off += (uint(rsa.Len) + 3) &^ 3
+			}
+			if iprsa != nil && iprsa.Family == syscall.AF_INET {
+				ipsa := (*syscall.RawSockaddrInet4)(unsafe.Pointer(iprsa))
+				return IPv4(ipsa.Addr[0], ipsa.Addr[1], ipsa.Addr[2], ipsa.Addr[3]).String()
+			}
+		}
+		tab = tab[ifm.Msglen:]
+	}
+	return ""
 }
 
 func linkFlags(rawFlags int32) Flags {
