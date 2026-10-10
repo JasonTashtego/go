@@ -3029,14 +3029,14 @@ func TestRootMultiLink(t *testing.T) {
 		switch {
 		case test.root != nil && test.source.lescapes():
 			test.wantError(t, gotErr, os.ErrPathEscapes)
-		case test.source.lfinalKind() == testFileAbsent:
+		case test.source.lfinalKind() == testFileAbsent && !(goexperiment.ISeriesAix && test.source.anySlashSuffix()):
 			test.wantError(t, gotErr, errAny)
 		case test.source.kind == testFileSymlink:
 			// os.Link(old, new) may or may not deference old when it is a symlink.
 			// POSIX says that link(2) should deference the source, but implementations
 			// are inconsistent.
 			return "", errSkipRootConsistencyCheck
-		case test.source.slashSuffix() && test.source.lfinalKind() != testFileDir:
+		case test.source.slashSuffix() && test.source.lfinalKind() != testFileDir && !goexperiment.ISeriesAix:
 			test.wantError(t, gotErr, errAny)
 		}
 		return "", gotErr
@@ -3224,7 +3224,7 @@ func TestRootMultiRename(t *testing.T) {
 		switch {
 		case test.root != nil && test.source.lescapes():
 			test.wantError(t, gotErr, os.ErrPathEscapes)
-		case test.source.lfinalKind() == testFileAbsent:
+		case test.source.lfinalKind() == testFileAbsent && !(goexperiment.ISeriesAix && test.source.anySlashSuffix()):
 			test.wantError(t, gotErr, errAny)
 		case test.source.slashSuffix() && test.source.lfinalKind() != testFileDir && runtime.GOOS != "js" && !goexperiment.ISeriesAix:
 			test.wantError(t, gotErr, errAny)
