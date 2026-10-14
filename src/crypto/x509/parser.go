@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"internal/godebug"
+	"internal/goexperiment"
 	"math"
 	"math/big"
 	"net"
@@ -1078,7 +1079,7 @@ func ParseCertificate(der []byte) (*Certificate, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(der) != len(cert.Raw) {
+	if len(der) != len(cert.Raw) && !goexperiment.ISeriesAix {
 		return nil, errors.New("x509: trailing data")
 	}
 	return cert, nil
