@@ -7,13 +7,19 @@
 package ld
 
 import (
+	"internal/buildcfg"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"syscall"
 )
 
-const syscallExecSupported = true
+// syscallExecSupported reports whether execArchive can use syscall.Exec. On
+// IBMi PASE execve fails with EPERM ("Not owner") in a process that has more
+// than one thread, as every Go program does, so the archiver is run as a
+// subprocess there.
+var syscallExecSupported = !(runtime.GOOS == "aix" && buildcfg.Experiment.ISeriesAix)
 
 // execArchive invokes the archiver tool with syscall.Exec(), with
 // the expectation that this is the last thing that takes place

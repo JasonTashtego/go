@@ -9,6 +9,7 @@ package syscall_test
 import (
 	"bytes"
 	"fmt"
+	"internal/goexperiment"
 	"internal/testenv"
 	"io"
 	"math/rand"
@@ -302,6 +303,9 @@ func TestInvalidExec(t *testing.T) {
 
 // TestExec is for issue #41702.
 func TestExec(t *testing.T) {
+	if goexperiment.ISeriesAix {
+		t.Skip("execve fails with EPERM in a multi-threaded process on IBMi PASE")
+	}
 	cmd := exec.Command(testenv.Executable(t), "-test.run=^TestExecHelper$")
 	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=2")
 	o, err := cmd.CombinedOutput()

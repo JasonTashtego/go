@@ -11,6 +11,7 @@ package cgotest
 import (
 	"bytes"
 	"crypto/md5"
+	"internal/goexperiment"
 	"internal/testenv"
 	"os"
 	"os/exec"
@@ -31,6 +32,10 @@ func test18146(t *testing.T) {
 
 	if runtime.GOARCH == "mips" || runtime.GOARCH == "mips64" {
 		t.Skipf("skipping on %s", runtime.GOARCH)
+	}
+
+	if goexperiment.ISeriesAix {
+		t.Skip("execve fails with EPERM in a multi-threaded process on IBMi PASE")
 	}
 
 	attempts := 1000
