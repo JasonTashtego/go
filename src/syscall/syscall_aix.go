@@ -597,7 +597,7 @@ func PtraceDetach(pid int) (err error) { return ptrace64(PT_DETACH, int64(pid), 
 //sys	Chmod(path string, mode uint32) (err error)
 //sys	Chown(path string, uid int, gid int) (err error)
 //sys	Chroot(path string) (err error)
-//sys	Close(fd int) (err error)
+//sys	closeRaw(fd int) (err error) = Close
 //sys	Dup(fd int) (nfd int, err error)
 //sys	Faccessat(dirfd int, path string, mode uint32, flags int) (err error)
 //sys	Fchdir(fd int) (err error)
