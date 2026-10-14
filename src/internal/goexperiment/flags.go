@@ -128,4 +128,8 @@ type Flags struct {
 
 	// RuntimeSecret enables the runtime/secret package.
 	RuntimeSecret bool
+
+	// ISeriesAix controls whether to compile for the 'aix' variant
+	// supported in IBMi/OS400
+	ISeriesAix bool
 }
