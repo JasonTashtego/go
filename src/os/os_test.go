@@ -9,6 +9,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"internal/goexperiment"
 	"internal/testenv"
 	"io"
 	"io/fs"
@@ -107,6 +108,19 @@ var sysdir = func() *sysDir {
 				"common",
 				"local",
 			},
+		}
+	case "aix":
+		if goexperiment.ISeriesAix {
+			// PASE has no /etc/group or /etc/passwd (users and groups come
+			// from the IBM i user profiles), so use files in the Go source tree.
+			return &sysDir{
+				runtime.GOROOT(),
+				[]string{
+					"go.env",
+					"LICENSE",
+					"CONTRIBUTING.md",
+				},
+			}
 		}
 	case "wasip1":
 		// wasmtime has issues resolving symbolic links that are often present

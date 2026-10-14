@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 )
 
@@ -96,14 +95,4 @@ func listGroupsFromReader(u *User, r io.Reader) ([]string, error) {
 	}
 
 	return groups, nil
-}
-
-func listGroups(u *User) ([]string, error) {
-	f, err := os.Open(groupFile)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	return listGroupsFromReader(u, f)
 }
