@@ -9,6 +9,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"internal/goexperiment"
 	"internal/testenv"
 	"io"
 	"io/fs"
@@ -507,6 +508,11 @@ func TestRootChtimes(t *testing.T) {
 				atime: time.Now(),
 				mtime: time.Time{},
 			}} {
+				if goexperiment.ISeriesAix {
+					// The IBMi file system keeps whole seconds.
+					times.atime = times.atime.Truncate(1 * time.Second)
+					times.mtime = times.mtime.Truncate(1 * time.Second)
+				}
 				switch runtime.GOOS {
 				case "js", "plan9":
 					times.atime = times.atime.Truncate(1 * time.Second)
@@ -876,8 +882,8 @@ func testRootMoveFrom(t *testing.T, rename bool) {
 					t.Fatalf("root.Readlink(%q) = %v, want success", test.ltarget, err)
 				}
 
-				// When GOOS=js, creating a hard link to a symlink fails.
-				if !rename && runtime.GOOS == "js" {
+				// When GOOS=js, or on IBMi PASE, creating a hard link to a symlink fails.
+				if !rename && (runtime.GOOS == "js" || goexperiment.ISeriesAix) {
 					wantError = true
 				}
 
@@ -1288,6 +1294,9 @@ func (test rootConsistencyTest) run(t *testing.T, f func(t *testing.T, path stri
 		if test.check != nil {
 			test.check(t)
 		}
+		if goexperiment.ISeriesAix && test.name == "file slash dot" {
+			t.Skip("IBMi PASE accepts a path of the form file/.")
+		}
 
 		dir1 := makefs(t, test.fs)
 		dir2 := makefs(t, test.fs)
@@ -1643,6 +1652,9 @@ func TestRootConsistencySymlink(t *testing.T) {
 }
 
 func TestRootRenameAfterOpen(t *testing.T) {
+	if goexperiment.ISeriesAix {
+		t.Skip("Root references a directory name, not a descriptor, on IBMi PASE")
+	}
 	switch runtime.GOOS {
 	case "windows":
 		t.Skip("renaming open files not supported on " + runtime.GOOS)
@@ -2252,9 +2264,11 @@ func runRootMultiTestDescs(t *testing.T, source, target testFileDesc, f func(*te
 		}
 	}
 
-	if runtime.GOOS == "wasip1" || runtime.GOOS == "js" {
+	if runtime.GOOS == "wasip1" || runtime.GOOS == "js" || goexperiment.ISeriesAix {
 		// WASI runtimes don't have any consistent behavior for handling paths with
 		// a trailing /, so skip consistency tests for these paths.
+		// IBMi PASE does not reject a trailing / on a file or on a name that does
+		// not exist, where Root does.
 		if rootTest.source.anySlashSuffix() || rootTest.target.anySlashSuffix() {
 			return
 		}
@@ -2639,7 +2653,7 @@ func (desc testFileDesc) lfinalKind() testFileKind {
 }
 
 func (desc testFileDesc) isError() bool {
-	if runtime.GOOS == "js" {
+	if runtime.GOOS == "js" || goexperiment.ISeriesAix {
 		return false
 	}
 	var isError func(desc testFileDesc, hasSuffix bool) bool
@@ -3053,14 +3067,14 @@ func TestRootMultiLink(t *testing.T) {
 		switch {
 		case test.root != nil && test.source.lescapes():
 			test.wantError(t, gotErr, os.ErrPathEscapes)
-		case test.source.lfinalKind() == testFileAbsent:
+		case test.source.lfinalKind() == testFileAbsent && !(goexperiment.ISeriesAix && test.source.anySlashSuffix()):
 			test.wantError(t, gotErr, errAny)
 		case test.source.kind.isLink():
 			// os.Link(old, new) may or may not deference old when it is a symlink.
 			// POSIX says that link(2) should deference the source, but implementations
 			// are inconsistent.
 			return "", errSkipRootConsistencyCheck
-		case test.source.slashSuffix() && test.source.lfinalKind() != testFileDir:
+		case test.source.slashSuffix() && test.source.lfinalKind() != testFileDir && !goexperiment.ISeriesAix:
 			test.wantError(t, gotErr, errAny)
 		}
 		return "", gotErr
@@ -3253,9 +3267,9 @@ func TestRootMultiRename(t *testing.T) {
 		switch {
 		case test.root != nil && test.source.lescapes():
 			test.wantError(t, gotErr, os.ErrPathEscapes)
-		case test.source.lfinalKind() == testFileAbsent:
+		case test.source.lfinalKind() == testFileAbsent && !(goexperiment.ISeriesAix && test.source.anySlashSuffix()):
 			test.wantError(t, gotErr, errAny)
-		case test.source.slashSuffix() && test.source.lfinalKind() != testFileDir && runtime.GOOS != "js":
+		case test.source.slashSuffix() && test.source.lfinalKind() != testFileDir && runtime.GOOS != "js" && !goexperiment.ISeriesAix:
 			test.wantError(t, gotErr, errAny)
 		case test.root != nil && test.target.lescapes():
 			test.wantError(t, gotErr, os.ErrPathEscapes)
@@ -3266,7 +3280,7 @@ func TestRootMultiRename(t *testing.T) {
 			// POSIX rename() will replace an empty target directory,
 			// but os.Rename will not.
 			test.wantError(t, gotErr, errAny)
-		case test.source.lfinalKind() == testFileDir && test.target.lfinalKind() != testFileAbsent:
+		case test.source.lfinalKind() == testFileDir && test.target.lfinalKind() != testFileAbsent && !(goexperiment.ISeriesAix && test.source.kind == testFileSymlink && test.source.slashSuffix()):
 			test.wantError(t, gotErr, errAny)
 		case test.source.anySlashSuffix() || test.target.anySlashSuffix():
 			if runtime.GOOS == "openbsd" {

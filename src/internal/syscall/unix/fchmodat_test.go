@@ -7,6 +7,7 @@
 package unix_test
 
 import (
+	"internal/goexperiment"
 	"internal/syscall/unix"
 	"os"
 	"runtime"
@@ -15,6 +16,9 @@ import (
 
 // TestFchmodAtSymlinkNofollow verifies that Fchmodat honors the AT_SYMLINK_NOFOLLOW flag.
 func TestFchmodatSymlinkNofollow(t *testing.T) {
+	if goexperiment.ISeriesAix {
+		t.Skip("fchmodat with a directory fd returns EINVAL on IBMi PASE")
+	}
 	if runtime.GOOS == "wasip1" {
 		t.Skip("wasip1 doesn't support chmod")
 	}

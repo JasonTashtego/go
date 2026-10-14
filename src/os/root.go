@@ -59,11 +59,13 @@ func OpenInRoot(dir, name string) (*File, error) {
 //     If the target of the operation is changed from a regular file to a symlink
 //     while the operation is in progress, the operation may be performed on the link
 //     rather than the link target.
-//   - When GOOS=js, Root is vulnerable to TOCTOU (time-of-check-time-of-use)
+//   - When GOOS=js, or on IBM i PASE (GOOS=aix with GOEXPERIMENT=iseriesaix),
+//     Root is vulnerable to TOCTOU (time-of-check-time-of-use)
 //     attacks in symlink validation, and cannot ensure that operations will not
 //     escape the root.
-//   - When GOOS=plan9 or GOOS=js, Root does not track directories across renames.
-//     On these platforms, a Root references a directory name, not a file descriptor.
+//   - When GOOS=plan9 or GOOS=js, or on IBM i PASE, Root does not track directories
+//     across renames. On these platforms, a Root references a directory name, not a
+//     file descriptor.
 //   - WASI preview 1 (GOOS=wasip1) does not support [Root.Chmod].
 type Root struct {
 	root *root
@@ -231,7 +233,7 @@ func (r *Root) Rename(oldname, newname string) error {
 // If oldname is a symbolic link, Link creates new link to oldname and not its target.
 // This behavior may differ from that of [Link] on some platforms.
 //
-// When GOOS=js, Link returns an error if oldname is a symbolic link.
+// When GOOS=js, or on IBM i PASE, Link returns an error if oldname is a symbolic link.
 func (r *Root) Link(oldname, newname string) error {
 	return rootLink(r, oldname, newname)
 }

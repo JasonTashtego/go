@@ -7,6 +7,7 @@
 package os
 
 import (
+	"internal/goexperiment"
 	"syscall"
 )
 
@@ -40,6 +41,19 @@ func statNolog(name string) (FileInfo, error) {
 
 // lstatNolog lstats a file with no test logging.
 func lstatNolog(name string) (FileInfo, error) {
+	if goexperiment.ISeriesAix && len(name) > 1 && name[len(name)-1] == '/' {
+		// IBMi PASE returns the symlink itself for lstat("link/"). A trailing
+		// slash requires the path to resolve to a directory, so the link must be
+		// followed, as stat does.
+		fi, err := statNolog(name)
+		if err != nil {
+			if pe, ok := err.(*PathError); ok {
+				pe.Op = "lstat"
+			}
+			return nil, err
+		}
+		return fi, nil
+	}
 	var fs fileStat
 	err := ignoringEINTR(func() error {
 		return syscall.Lstat(name, &fs.sys)
