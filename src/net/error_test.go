@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"internal/goexperiment"
 	"internal/poll"
 	"io"
 	"io/fs"
@@ -156,6 +157,10 @@ func TestDialError(t *testing.T) {
 	d := Dialer{Timeout: someTimeout}
 	for i, tt := range dialErrorTests {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			if goexperiment.ISeriesAix && strings.HasSuffix(tt.address, ":☺") {
+				// PASE getaddrinfo accepts an unknown service name and returns port 0.
+				t.Skip("PASE getaddrinfo accepts service \"☺\"")
+			}
 			c, err := d.Dial(tt.network, tt.address)
 			if err == nil {
 				t.Errorf("should fail; %s:%s->%s", c.LocalAddr().Network(), c.LocalAddr(), c.RemoteAddr())
@@ -310,6 +315,10 @@ func TestListenError(t *testing.T) {
 
 	for i, tt := range listenErrorTests {
 		t.Run(fmt.Sprintf("%s_%s", tt.network, tt.address), func(t *testing.T) {
+			if goexperiment.ISeriesAix && strings.HasSuffix(tt.address, ":☺") {
+				// PASE getaddrinfo accepts an unknown service name and returns port 0.
+				t.Skip("PASE getaddrinfo accepts service \"☺\"")
+			}
 			ln, err := Listen(tt.network, tt.address)
 			if err == nil {
 				t.Errorf("#%d: should fail; %s:%s->", i, ln.Addr().Network(), ln.Addr())
@@ -366,6 +375,10 @@ func TestListenPacketError(t *testing.T) {
 
 	for i, tt := range listenPacketErrorTests {
 		t.Run(fmt.Sprintf("%s_%s", tt.network, tt.address), func(t *testing.T) {
+			if goexperiment.ISeriesAix && strings.HasSuffix(tt.address, ":☺") {
+				// PASE getaddrinfo accepts an unknown service name and returns port 0.
+				t.Skip("PASE getaddrinfo accepts service \"☺\"")
+			}
 			c, err := ListenPacket(tt.network, tt.address)
 			if err == nil {
 				t.Errorf("#%d: should fail; %s:%s->", i, c.LocalAddr().Network(), c.LocalAddr())

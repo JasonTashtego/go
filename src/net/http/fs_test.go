@@ -10,6 +10,7 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
+	"internal/goexperiment"
 	"internal/testenv"
 	"io"
 	"io/fs"
@@ -1722,7 +1723,7 @@ func (grw gzipResponseWriter) Flush() {
 // Issue 63769
 func TestFileServerDirWithRootFile(t *testing.T) { run(t, testFileServerDirWithRootFile) }
 func testFileServerDirWithRootFile(t *testing.T, mode testMode) {
-	testDirFile := func(t *testing.T, h Handler) {
+	testDirFile := func(t *testing.T, h Handler, want int) {
 		ts := newClientServerTest(t, mode, h).ts
 		defer ts.Close()
 
@@ -1730,18 +1731,23 @@ func testFileServerDirWithRootFile(t *testing.T, mode testMode) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if g, w := res.StatusCode, StatusInternalServerError; g != w {
+		if g, w := res.StatusCode, want; g != w {
 			t.Errorf("StatusCode mismatch: got %d, want: %d", g, w)
 		}
 		res.Body.Close()
 	}
 
 	t.Run("FileServer", func(t *testing.T) {
-		testDirFile(t, FileServer(Dir("testdata/index.html")))
+		testDirFile(t, FileServer(Dir("testdata/index.html")), StatusInternalServerError)
 	})
 
 	t.Run("FileServerFS", func(t *testing.T) {
-		testDirFile(t, FileServerFS(os.DirFS("testdata/index.html")))
+		want := StatusInternalServerError
+		if goexperiment.ISeriesAix {
+			// IBMi PASE fails open("file/.") with EACCES, not ENOTDIR.
+			want = StatusForbidden
+		}
+		testDirFile(t, FileServerFS(os.DirFS("testdata/index.html")), want)
 	})
 }
 

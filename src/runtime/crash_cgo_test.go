@@ -9,6 +9,7 @@ package runtime_test
 import (
 	"fmt"
 	"internal/asan"
+	"internal/goexperiment"
 	"internal/goos"
 	"internal/msan"
 	"internal/race"
@@ -781,6 +782,12 @@ func TestSegv(t *testing.T) {
 			}
 
 			// No runtime errors like "runtime: unknown pc".
+			if goexperiment.ISeriesAix {
+				// The signal can arrive on the thread that sent it, while it
+				// is in a PASE kernel entry stub (pc 0x3608) inside
+				// syscall.Kill, which the traceback cannot unwind.
+				testenv.SkipFlaky(t, 49182)
+			}
 			switch runtime.GOOS {
 			case "darwin", "ios", "illumos", "solaris":
 				// Runtime sometimes throws when generating the traceback.

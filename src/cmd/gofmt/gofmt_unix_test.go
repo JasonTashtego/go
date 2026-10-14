@@ -7,6 +7,7 @@
 package main
 
 import (
+	"internal/goexperiment"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,6 +30,10 @@ func TestPermissions(t *testing.T) {
 
 	// Set mtime of the file in the past.
 	past := time.Now().Add(-time.Hour)
+	if goexperiment.ISeriesAix {
+		// The IBMi file system keeps whole seconds.
+		past = past.Truncate(time.Second)
+	}
 	if err := os.Chtimes(fn, past, past); err != nil {
 		t.Fatal(err)
 	}

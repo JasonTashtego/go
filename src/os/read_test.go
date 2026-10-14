@@ -7,6 +7,7 @@ package os_test
 import (
 	"bytes"
 	"errors"
+	"internal/goexperiment"
 	. "os"
 	"path/filepath"
 	"runtime"
@@ -115,7 +116,9 @@ func TestReadDir(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.Close()
-	if list, err := ReadDir(filename); list != nil || !errors.Is(err, syscall.ENOTDIR) {
+	if list, err := ReadDir(filename); goexperiment.ISeriesAix && err != nil {
+		// PASE reports EBADF, not ENOTDIR, when reading a file as a directory.
+	} else if list != nil || !errors.Is(err, syscall.ENOTDIR) {
 		t.Fatalf("ReadDir %s: (nil, ENOTDIR) expected, got (%v, %v)", filename, list, err)
 	}
 
