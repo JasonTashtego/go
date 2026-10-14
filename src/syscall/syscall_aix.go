@@ -625,7 +625,7 @@ func PtraceDetach(pid int) (err error) { return ptrace64(PT_DETACH, int64(pid), 
 //sys	Mkdir(path string, mode uint32) (err error)
 //sys	Mkdirat(dirfd int, path string, mode uint32) (err error)
 //sys	Mknodat(dirfd int, path string, mode uint32, dev int) (err error)
-//sys	Open(path string, mode int, perm uint32) (fd int, err error)
+//sys	openRaw(path string, mode int, perm uint32) (fd int, err error) = Open
 //sys	pread(fd int, p []byte, offset int64) (n int, err error)
 //sys	pwrite(fd int, p []byte, offset int64) (n int, err error)
 //sys	read(fd int, p []byte) (n int, err error)
