@@ -1,7 +1,8 @@
-## Experimental IBMi Go support
-Go 1.22 See (https://github.com/JasonTashtego/go/tree/iseries-1.22)
-
+## IBMi Go support (experimental)
 Go 1.26 See (https://github.com/JasonTashtego/go/tree/iseries-1.26.9)
+
+(outdated) Go 1.22 See (https://github.com/JasonTashtego/go/tree/iseries-1.22)
+
 
 # The Go Programming Language
 
