@@ -8,6 +8,7 @@ package os_test
 
 import (
 	"errors"
+	"internal/goexperiment"
 	"internal/testenv"
 	"math"
 	. "os"
@@ -73,6 +74,11 @@ func TestUNIXProcessAlive(t *testing.T) {
 	}
 	err = proc.Signal(syscall.Signal(0))
 	if err != nil {
+		if goexperiment.ISeriesAix {
+			// The child exits at once, and the signal sometimes reports
+			// "os: process already finished" on IBMi PASE.
+			testenv.SkipFlaky(t, 0)
+		}
 		t.Errorf("OS reported error for running process: %v", err)
 	}
 }
