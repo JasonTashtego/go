@@ -42,7 +42,7 @@ jobs:
         env:
           GOEXPERIMENT: iseriesaix
         run: |
-          export GOROOT_BOOTSTRAP="$(go env GOROOT)"
+          export GOROOT_BOOTSTRAP="$(GOEXPERIMENT= go env GOROOT)"
           unset GOROOT
           ./make.bash
 
