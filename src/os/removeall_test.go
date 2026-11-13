@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"internal/goexperiment"
 	"internal/testenv"
 	. "os"
 	"path/filepath"
@@ -153,6 +154,9 @@ func TestRemoveAllLarge(t *testing.T) {
 }
 
 func TestRemoveAllLongPath(t *testing.T) {
+	if goexperiment.ISeriesAix {
+		t.Skip("removing a path longer than PATH_MAX needs the *at system calls, which fail with EINVAL on IBMi PASE")
+	}
 	switch runtime.GOOS {
 	case "aix", "darwin", "ios", "dragonfly", "freebsd", "linux", "netbsd", "openbsd", "illumos", "solaris":
 		break

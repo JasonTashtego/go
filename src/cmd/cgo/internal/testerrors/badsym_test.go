@@ -7,6 +7,7 @@ package errorstest
 import (
 	"bytes"
 	"cmd/internal/quoted"
+	"internal/goexperiment"
 	"internal/testenv"
 	"os"
 	"os/exec"
@@ -43,6 +44,9 @@ func main() {
 func TestBadSymbol(t *testing.T) {
 	testenv.MustHaveGoBuild(t)
 	testenv.MustHaveCGO(t)
+	if goexperiment.ISeriesAix {
+		t.Skip("cgo -dynimport on XCOFF emits no symbol names, so the symbol check never runs")
+	}
 
 	dir := t.TempDir()
 

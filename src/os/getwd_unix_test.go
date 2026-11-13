@@ -8,6 +8,7 @@ package os_test
 
 import (
 	"errors"
+	"internal/goexperiment"
 	. "os"
 	"path/filepath"
 	"runtime"
@@ -27,6 +28,12 @@ func TestGetwdDeepWithPWDSet(t *testing.T) {
 // testGetwdDeep checks that os.Getwd is able to return paths
 // longer than syscall.PathMax (with or without PWD set).
 func testGetwdDeep(t *testing.T, setPWD bool) {
+	if goexperiment.ISeriesAix {
+		// The path-based RemoveAll used on PASE cannot remove a directory
+		// deeper than PATH_MAX (lstat fails with ENAMETOOLONG), so the
+		// TempDir cleanup of this test fails.
+		t.Skip("RemoveAll cannot remove paths longer than PATH_MAX on PASE")
+	}
 	tempDir := t.TempDir()
 
 	dir := tempDir

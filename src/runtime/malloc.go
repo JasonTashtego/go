@@ -311,7 +311,9 @@ const (
 	//
 	// On other platforms, the user address space is contiguous
 	// and starts at 0, so no offset is necessary.
-	arenaBaseOffset = 0xffff800000000000*goarch.IsAmd64 + 0x0a00000000000000*goos.IsAix
+
+	// aix/ppc64 on ISeries arena: 0x0700000000000000, so adjust it below
+	arenaBaseOffset = 0xffff800000000000*goarch.IsAmd64 + 0x0a00000000000000*goos.IsAix - 0x0300000000000000*goexperiment.ISeriesAixInt*goos.IsAix
 	// A typed version of this constant that will make it into DWARF (for viewcore).
 	arenaBaseOffsetUintptr = uintptr(arenaBaseOffset)
 
@@ -616,6 +618,12 @@ func mallocinit() {
 			case randomizeHeapBase:
 				prefix := uintptr(randHeapBasePrefix+byte(i)) << (randHeapAddrBits - 8)
 				p = prefix | (randHeapBase & randHeapBasePrefixMask)
+				if GOOS == "aix" {
+					// The heap lives at arenaBaseOffset and above; a
+					// hint below it is never usable (and a hint of 0
+					// would be taken for a successful reservation).
+					p += arenaBaseOffset
+				}
 			case GOARCH == "arm64" && GOOS == "ios":
 				p = uintptr(i)<<40 | uintptrMask&(0x0013<<28)
 			case GOARCH == "arm64":
@@ -628,7 +636,7 @@ func mallocinit() {
 					// to avoid collisions with others mmaps done by non-go programs.
 					continue
 				}
-				p = uintptr(i)<<40 | uintptrMask&(0xa0<<52)
+				p = uintptr(i)<<40 | uintptrMask&arenaBaseOffset
 			default:
 				p = uintptr(i)<<40 | uintptrMask&(0x00c0<<32)
 			}

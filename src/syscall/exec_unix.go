@@ -204,8 +204,12 @@ func forkExec(argv0 string, argv []string, attr *ProcAttr) (pid int, err error) 
 		return 0, err
 	}
 
-	// Kick off child.
+	// Kick off child. On IBMi no descriptor may be created or closed by another
+	// thread while the child is being created; see exec_aix_fdlock.go.
+	// No-op elsewhere.
+	forkExecFDLock()
 	pid, err1 = forkAndExecInChild(argv0p, argvp, envvp, chroot, dir, attr, sys, p[1])
+	forkExecFDUnlock()
 	if err1 != 0 {
 		Close(p[0])
 		Close(p[1])

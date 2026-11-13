@@ -130,4 +130,8 @@ type Flags struct {
 	// from interleaved key/elem slots (KVKVKVKV) to split key and elem
 	// arrays (KKKKVVVV).
 	MapSplitGroup bool
+
+	// ISeriesAix controls whether to compile for the 'aix' variant
+	// supported in IBMi/OS400
+	ISeriesAix bool
 }

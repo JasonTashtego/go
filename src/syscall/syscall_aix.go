@@ -12,6 +12,7 @@
 package syscall
 
 import (
+	"internal/goexperiment"
 	"unsafe"
 )
 
@@ -451,6 +452,13 @@ func anyToSockaddr(rsa *RawSockaddrAny) (Sockaddr, error) {
 		sa.Port = int(p[0])<<8 + int(p[1])
 		sa.Addr = pp.Addr
 		return sa, nil
+
+	case AF_UNSPEC:
+		if goexperiment.ISeriesAix {
+			// IBMi PASE appears to report an unnamed unix socket peer
+			// (e.g. from accept) with no address family set.
+			return new(SockaddrUnix), nil
+		}
 	}
 	return nil, EAFNOSUPPORT
 }
@@ -594,7 +602,7 @@ func PtraceDetach(pid int) (err error) { return ptrace64(PT_DETACH, int64(pid), 
 //sys	Chmod(path string, mode uint32) (err error)
 //sys	Chown(path string, uid int, gid int) (err error)
 //sys	Chroot(path string) (err error)
-//sys	Close(fd int) (err error)
+//sys	closeRaw(fd int) (err error) = Close
 //sys	Dup(fd int) (nfd int, err error)
 //sys	Faccessat(dirfd int, path string, mode uint32, flags int) (err error)
 //sys	Fchdir(fd int) (err error)
@@ -622,7 +630,7 @@ func PtraceDetach(pid int) (err error) { return ptrace64(PT_DETACH, int64(pid), 
 //sys	Mkdir(path string, mode uint32) (err error)
 //sys	Mkdirat(dirfd int, path string, mode uint32) (err error)
 //sys	Mknodat(dirfd int, path string, mode uint32, dev int) (err error)
-//sys	Open(path string, mode int, perm uint32) (fd int, err error)
+//sys	openRaw(path string, mode int, perm uint32) (fd int, err error) = Open
 //sys	pread(fd int, p []byte, offset int64) (n int, err error)
 //sys	pwrite(fd int, p []byte, offset int64) (n int, err error)
 //sys	read(fd int, p []byte) (n int, err error)

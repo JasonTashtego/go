@@ -11,6 +11,7 @@
 package runtime
 
 import (
+	"internal/goexperiment"
 	"internal/runtime/sys"
 	"unsafe"
 )
@@ -563,6 +564,11 @@ func clock_gettime(clockid int32, tp *timespec) int32 {
 func setitimer(mode int32, new, old *itimerval) {
 	r, err := syscall3(&libc_setitimer, uintptr(mode), uintptr(unsafe.Pointer(new)), uintptr(unsafe.Pointer(old)))
 	if int32(r) == -1 {
+		if goexperiment.ISeriesAix && mode == _ITIMER_PROF {
+			// IBMi PASE rejects ITIMER_PROF with EINVAL. Run without
+			// CPU profile samples rather than crash the program.
+			return
+		}
 		println("syscall setitimer failed: ", hex(err))
 		throw("syscall setitimer")
 	}

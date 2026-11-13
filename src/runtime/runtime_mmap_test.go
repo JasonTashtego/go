@@ -7,6 +7,7 @@
 package runtime_test
 
 import (
+	"internal/goexperiment"
 	"runtime"
 	"testing"
 	"unsafe"
@@ -16,6 +17,9 @@ import (
 // what the code in mem_bsd.go, mem_darwin.go, and mem_linux.go expects.
 // See the uses of ENOMEM in sysMap in those files.
 func TestMmapErrorSign(t *testing.T) {
+	if goexperiment.ISeriesAix {
+		t.Skip("PASE mmap returns EINVAL, not ENOMEM, for an impossibly large request")
+	}
 	p, err := runtime.Mmap(nil, ^uintptr(0)&^(runtime.GetPhysPageSize()-1), 0, runtime.MAP_ANON|runtime.MAP_PRIVATE, -1, 0)
 
 	if p != nil || err != runtime.ENOMEM {
