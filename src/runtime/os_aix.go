@@ -42,9 +42,7 @@ func semacreate(mp *m) {
 	// allocate space on the C heap. We can't call mallocgc
 	// here because it could cause a deadlock.
 	sem = (*semt)(malloc(unsafe.Sizeof(*sem)))
-	if r, err := sem_init(sem, 0, 0); r != 0 {
-		// DIAGNOSTIC: report why sem_init failed.
-		println("sem_init failed: r=", r, " errno=", err, " sem=", sem, " sizeof(semt)=", unsafe.Sizeof(*sem))
+	if sem_init(sem, 0, 0) != 0 {
 		throw("sem_init")
 	}
 	mp.waitsema = uintptr(unsafe.Pointer(sem))

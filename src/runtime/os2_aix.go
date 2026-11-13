@@ -581,9 +581,9 @@ func malloc(size uintptr) unsafe.Pointer {
 }
 
 //go:nosplit
-func sem_init(sem *semt, pshared int32, value uint32) (int32, int32) {
-	r, err := syscall3(&libc_sem_init, uintptr(unsafe.Pointer(sem)), uintptr(pshared), uintptr(value))
-	return int32(r), int32(err)
+func sem_init(sem *semt, pshared int32, value uint32) int32 {
+	r, _ := syscall3(&libc_sem_init, uintptr(unsafe.Pointer(sem)), uintptr(pshared), uintptr(value))
+	return int32(r)
 }
 
 //go:nosplit
