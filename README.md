@@ -1,10 +1,10 @@
-# IBMi Go Support (1.26.9)
+# IBMi Go Support (1.27.4)
 
 >>> **This repo is EXPERIMENTAL -- use at your own risk. No warranties expressed or implied. YMMV.**
 
 ## Overview
 
-The [`iseries-1.26.9`](https://github.com/JasonTashtego/go/tree/iseries-1.26.9) branch of this repo is a fork of Go 1.26.9 with modifications that originated with [onlysumitg/ibmigo](https://github.com/onlysumitg/ibmigo), plus an existing 1.22.8 port found in this repository. Infinite thanks to everyone mentioned there who contributed to making it possible.
+The [`iseries-1.27.4`](https://github.com/JasonTashtego/go/tree/iseries-1.27.4) branch of this repo is a fork of Go 1.27.4 with modifications that originated with [onlysumitg/ibmigo](https://github.com/onlysumitg/ibmigo), plus an existing 1.22.8 port found in this repository. Infinite thanks to everyone mentioned there who contributed to making it possible.
 
 As noted in [golang/go#45017](https://github.com/golang/go/issues/45017), address space differences cause standard `aix/ppc64` executables to fail on IBMi.
 
@@ -18,7 +18,9 @@ The flag turns on the alternative address spacing so the compiler produces worki
 
 If you're not familiar with building Go -- see [Installing Go from source](https://go.dev/doc/install/source)
 
-You can use the [`iseries-1.26.9`](https://github.com/JasonTashtego/go/tree/iseries-1.26.9) branch to cross-compile pure Go code (no CGO) to IBMi from any supported Go platform. Check out the branch and build with the standard `make.bash`/`make.bat` (`all.bash`/`all.bat` also run the tests). If all you need is cross-compiling, set `GOEXPERIMENT=iseriesaix`, build pure-Go executables, and move them to the IBMi.  
+You can use the [`iseries-1.27.4`](https://github.com/JasonTashtego/go/tree/iseries-1.27.4) branch to cross-compile pure Go code (no CGO) to IBMi from any supported Go platform. Check out the branch and build with the standard `make.bash`/`make.bat` (`all.bash`/`all.bat` also run the tests). If all you need is cross-compiling, set `GOEXPERIMENT=iseriesaix`, build pure-Go executables, and move them to the IBMi.  
+
+**Prebuilt cross-compiler:** a Linux/amd64 build of the toolchain (with `GOEXPERIMENT=iseriesaix` as the default) is published as the [`ibmi-go1.27.4` release](https://github.com/JasonTashtego/go/releases/tag/ibmi-go1.27.4), with a `.sha256` checksum. Download, verify, extract, and put `go/bin` on your `PATH` to cross-compile pure Go code for IBMi without building from source.
 
 For CGO support, you must bootstrap on a supported platform, then build natively on the IBMi with a working GCC (see [Native IBMi build](#native-ibmi-build)).
 
@@ -28,13 +30,13 @@ For CGO support, you must bootstrap on a supported platform, then build natively
 
 All changes are keyed off `GOEXPERIMENT=iseriesaix` (flag added in `src/internal/goexperiment`). Build tags `goexperiment.iseriesaix` select the IBMi variants of some `os` files.
 
-The commit stream can be reviewed here [Commits](https://github.com/JasonTashtego/go/commits/iseries-1.26.9/?author=JasonTashtego)
+The commit stream can be reviewed here [Commits](https://github.com/JasonTashtego/go/commits/iseries-1.27.4/?author=JasonTashtego)
 
 ### Address space and runtime
 
 | File | Change                                                                                                                                                                                                                                                                                                                                                                                              |
 | --- |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `runtime/malloc.go`, `runtime/tagptr_64bit.go` | IBMi address space: the arena base and tagged pointers use `0x07...` instead of `0x0a...`. The randomized heap base that Go 1.26 uses on AIX now adds the arena base to its hints; before, the hints started at address 0, and one process start in about 65,536 got a hint of exactly 0 that was taken for a successful allocation ([golang/go#82006](https://github.com/golang/go/issues/82006)). |
+| `runtime/malloc.go`, `runtime/tagptr_64bit.go` | IBMi address space: the arena base and tagged pointers use `0x07...` instead of `0x0a...`. The randomized heap base that Go 1.26 and later use on AIX now adds the arena base to its hints; before, the hints started at address 0, and one process start in about 65,536 got a hint of exactly 0 that was taken for a successful allocation ([golang/go#82006](https://github.com/golang/go/issues/82006)). |
 | `runtime/os2_aix.go` | `setitimer(ITIMER_PROF)` fails on PASE; the error is ignored, so CPU profiling is not available, as it collects no samples.                                                                                                                                                                                                                                                                         |
 
 ### Process creation
@@ -76,12 +78,12 @@ Test results for the native IBMi build, with the PASE limits behind the remainin
 ```
 git clone https://github.com/JasonTashtego/go.git
 cd go
-git checkout iseries-1.26.9
+git checkout iseries-1.27.4
 ```
 
 ## Prerequisites
 
-- **A bootstrap Go:** Go 1.24.6 or newer (1.26.x is recommended) on your `PATH`. `make.bash`/`make.bat` finds it automatically, so you don't need to set `GOROOT_BOOTSTRAP`.
+- **A bootstrap Go:** Go 1.24.6 or newer (1.26.x or 1.27.x is recommended) on your `PATH`. `make.bash`/`make.bat` finds it automatically, so you don't need to set `GOROOT_BOOTSTRAP`.
 - **C compiler:** Not needed for bootstrap kit or cross-compile. A Windows host builds with the default `CGO_ENABLED=0` and doesn't use gcc. On Linux, you can set `CGO_ENABLED=0`; you must bootstrap on a supported platform and then build on IBMi to enable CGO support.
 
 ## Cross-Compiling from a Host Machine
@@ -138,8 +140,8 @@ go build std
 Install it somewhere normal if needed. The toolchain is relocatable, so copy the tree without `.git`, then put the new `bin` first on your `PATH`:
 
 ```powershell
-robocopy <root>\go C:\go\1.26.9-iseries /E /XD .git
-$env:PATH = "C:\go\1.26.9-iseries\bin;$env:PATH"
+robocopy <root>\go C:\go\1.27.4-iseries /E /XD .git
+$env:PATH = "C:\go\1.27.4-iseries\bin;$env:PATH"
 go version
 ```
 
@@ -153,7 +155,7 @@ If you do not need CGO support, you are **done**. Any supported Go platform can 
 
 ``` bash
 $ go version
-go version go1.26.9-X:iseriesaix
+go version go1.27.4-X:iseriesaix
 ```
 
 ## Native IBMi Build
@@ -184,7 +186,7 @@ export GOROOT_BOOTSTRAP=$PWD/go-aix-ppc64-bootstrap
 **3. Get the source and set up the environment.** Use a separate checkout; don't build inside the bootstrap directory. On the IBMi you need either `git` or a copy of the repo tree transferred over.
 
 ```bash
-git clone -b iseries-1.26.9 https://github.com/JasonTashtego/go.git   # or transfer a new copy
+git clone -b iseries-1.27.4 https://github.com/JasonTashtego/go.git   # or transfer a new copy
 ```
 
 For CGO support, install GCC:
