@@ -129,7 +129,13 @@ func TestSecretCgo(t *testing.T) {
 	cmd := exec.Command(testenv.GoToolPath(t), "build", "-o", exe)
 	cmd.Dir = "testdata/testprogcgo"
 	cmd = testenv.CleanCmdEnv(cmd)
-	cmd.Env = append(cmd.Env, "GOEXPERIMENT=runtimesecret")
+	exp := "runtimesecret"
+	if goexperiment.ISeriesAix {
+		// Overriding GOEXPERIMENT must not drop iseriesaix, or the
+		// program gets the wrong heap address range on IBM i.
+		exp += ",iseriesaix"
+	}
+	cmd.Env = append(cmd.Env, "GOEXPERIMENT="+exp)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("building testprogcgo with runtimesecret: %v\n%s", err, out)
